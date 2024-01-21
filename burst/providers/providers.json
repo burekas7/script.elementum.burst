@@ -52,7 +52,7 @@
         "anime_keywords_fallback2": "{title:en} season {season}",
         "anime_keywords_fallback3": "{title:en} {season:2}x01",
         "anime_query": "",
-        "base_url": "https://www.1337x.to/search/QUERYEXTRA/1/",
+        "base_url": "https://www.1337xx.to/search/QUERYEXTRA/1/",
         "color": "FFF14E13",
         "enabled": true,
         "general_extra": "",
@@ -74,7 +74,7 @@
             "row": "find_once(tag='tbody').find_all('tr')",
             "seeds": "item(tag='td', order=2)",
             "size": "item(tag='td', order=5)",
-            "torrent": "'https://www.1337x.to%s' % item(tag='a', attribute='href', order=2)"
+            "torrent": "'https://www.1337xx.to%s' % item(tag='a', attribute='href', order=2)"
         },
         "predefined": true,
         "private": false,
