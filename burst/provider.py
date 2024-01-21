@@ -14,7 +14,7 @@ from .client import Client
 from elementum.provider import log, get_setting, set_setting
 from .filtering import cleanup_results
 from .providers.definitions import definitions, longest
-from .utils import ADDON_PATH, get_int, clean_size, get_alias
+from .utils import ADDON_PATH, get_int, clean_size, get_alias, with_defaults
 from kodi_six import xbmc, xbmcaddon, py2_encode
 if PY3:
     from urllib.parse import quote, unquote
@@ -88,7 +88,7 @@ def process(provider, generator, filtering, has_special, verify_name=True, verif
     """
     log.debug("[%s] execute_process for %s with %s" % (provider, provider, repr(generator)))
     definition = definitions[provider]
-    definition = get_alias(definition, get_setting("%s_alias" % provider))
+    definition = with_defaults(get_alias(definition, get_setting("%s_alias" % provider)))
 
     client = Client(info=filtering.info, request_charset=definition['charset'], response_charset=definition['response_charset'], is_api='is_api' in definition and definition['is_api'])
     token = None
@@ -149,10 +149,7 @@ def process(provider, generator, filtering, has_special, verify_name=True, verif
             return filtering.results
 
         url_search = filtering.url.replace('QUERY', query)
-        if extra:
-            url_search = url_search.replace('EXTRA', extra)
-        else:
-            url_search = url_search.replace('EXTRA', '')
+        url_search = url_search.replace('EXTRA', extra)
 
         url_search = url_search.replace(' ', definition['separator'])
         if definition['separator'] != '%20':
@@ -167,22 +164,18 @@ def process(provider, generator, filtering, has_special, verify_name=True, verif
 
         payload = dict()
         for key, value in iteritems(filtering.post_data):
-            if 'QUERY' in value:
-                payload[key] = filtering.post_data[key].replace('QUERY', query)
-            else:
-                payload[key] = filtering.post_data[key]
+            payload[key] = filtering.post_data[key].replace('QUERY', query)
+            payload[key] = payload[key].replace('EXTRA', extra)
             payload[key] = unquote(payload[key])
 
-        # Creating the payload for GET method
-        headers = None
+        # Creating the payload for GET method (unused at the moment)
         data = None
         if filtering.get_data:
             data = dict()
             for key, value in iteritems(filtering.get_data):
-                if 'QUERY' in value:
-                    data[key] = filtering.get_data[key].replace('QUERY', query)
-                else:
-                    data[key] = filtering.get_data[key]
+                data[key] = filtering.get_data[key].replace('QUERY', query)
+                data[key] = data[key].replace('EXTRA', extra)
+                data[key] = unquote(data[key])
 
         log.debug("-   %s query: %s" % (provider, repr(query)))
         log.debug("--  %s url_search before token: %s" % (provider, repr(url_search)))
@@ -296,7 +289,7 @@ def process(provider, generator, filtering, has_special, verify_name=True, verif
                         log.error("[%s] Token auth failed with response: %s" % (provider, repr(client.content)))
                         return filtering.results
                 elif not logged_in and client.login(definition['root_url'], definition['login_path'],
-                                                    eval(login_object), login_headers, definition['login_failed']):
+                                                    eval(login_object), login_headers, definition['login_failed'], definition['login_prerequest']):
                     log.info('[%s] Login successful' % provider)
                     logged_in = True
                 elif not logged_in:
@@ -313,6 +306,7 @@ def process(provider, generator, filtering, has_special, verify_name=True, verif
 
         log.info("[%s] >  %s search URL: %s" % (provider, definition['name'].rjust(longest), url_search))
 
+        headers = None
         if 'headers' in definition and definition['headers']:
             headers = eval(definition['headers'])
             log.info("[%s] >  %s headers: %s" % (provider, definition['name'].rjust(longest), headers))
